@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pytest_cache/
+.venv/
+venv/
+.env
+.env.*
+.envrc
+
+# Editors/OS
+.vscode/
+.idea/
+.DS_Store
+
+# Coverage/lint caches
+**/.coverage
+**/htmlcov/
+**/.mypy_cache/
+**/.ruff_cache/
+
+# Build / dist
+build/
+dist/
+
+# Docker & misc
+*.log
+
+# Keys/secrets (keep a README only)
+common/crypto/keys/*
+!common/crypto/keys/README.md
