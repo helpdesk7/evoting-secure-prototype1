@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, Depends, Body
+from fastapi import APIRouter, HTTPException, Depends, Body # type: ignore
 from datetime import datetime, timedelta, timezone
 import secrets
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session # type: ignore
 from common.db import get_session
 from common.models.models import BallotToken
 
