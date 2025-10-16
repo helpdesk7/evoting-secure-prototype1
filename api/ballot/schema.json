@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ballot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["electionId", "rankings"],
+  "properties": {
+    "electionId": { "type": "string", "minLength": 1 },
+    "rankings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["candidateId", "rank"],
+        "additionalProperties": false,
+        "properties": {
+          "candidateId": { "type": "string", "minLength": 1 },
+          "rank": { "type": "integer", "minimum": 1 }
+        }
+      }
+    }
+  }
+}
