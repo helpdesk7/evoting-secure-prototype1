@@ -1,25 +1,19 @@
-from fastapi import FastAPI
+# services/registration/app.py
+from fastapi import FastAPI # type: ignore
 from contextlib import asynccontextmanager
-from common.db import engine, Base
-from common.models.models import *  # noqa
-from .routes import router
 import os
+
+from common.db import engine, Base
+from .routes import router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Modern lifespan event handler — replaces @app.on_event("startup").
-    Only registration service runs DB migrations (others skip).
-    """
     if os.getenv("RUN_DB_MIGRATIONS", "false").lower() == "true":
         Base.metadata.create_all(bind=engine)
-        print("✅ Database tables created by registration service.")
-    yield  # startup continues here
-    # (optional cleanup code could go after yield)
+    yield
 
 
-# Create the FastAPI app with lifespan handler
 app = FastAPI(
     title="Registration Service",
     lifespan=lifespan,
@@ -28,16 +22,16 @@ app = FastAPI(
     redoc_url=None,
 )
 
+# keep your existing imports and app setup
 
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
 
+# add this alias so nginx path works too
+@app.get("/registration/healthz")
+def healthz_alias():
+    return {"status": "ok"}
 
-@app.get("/readyz")
-def readyz():
-    return {"db": "ok"}
 
-
-# Include your functional routes
 app.include_router(router, prefix="/registration")

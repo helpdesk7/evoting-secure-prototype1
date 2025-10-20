@@ -1,6 +1,6 @@
 # common/db.py
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy import create_engine # type: ignore
+from sqlalchemy.orm import sessionmaker, DeclarativeBase # type: ignore
 import os
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5432/postgres")

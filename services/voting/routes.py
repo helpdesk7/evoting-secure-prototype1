@@ -1,11 +1,11 @@
 # services/voting/routes.py
-from fastapi import APIRouter, HTTPException, Depends, Body
+from fastapi import APIRouter, HTTPException, Depends, Body # type: ignore
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session # type: ignore
 
 from common.db import get_session
 from common.models.models import Ballot, BallotChain
-from common.crypto.ballots import (
+from common.cryptoutils.ballots import ( # type: ignore
     canonical_prefs,
     receipt_hash,
     encrypt_ballot,

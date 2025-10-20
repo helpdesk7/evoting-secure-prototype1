@@ -1,22 +1,20 @@
+# Dockerfile (repo root)
 FROM python:3.11-slim
 
-# 1) System deps for building common Python wheels (crypto, postgres)
+# Optional system deps if you build wheels locally (cryptography, psycopg2)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    libpq-dev \
-    libssl-dev \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# 2) Upgrade pip toolchain before installing requirements
+# Install deps first (layer caching)
 COPY requirements.txt .
-RUN python -m pip install --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 3) Copy source code last (keeps caches if only code changes)
+# Copy the whole source tree (common, services, cryptoutils, infra, etc.)
 COPY . .
 
-# Overridden by docker-compose; left here as a default
-CMD ["python", "-c", "print('Specify a command in docker-compose')"]
+# Make top-level packages importable
+ENV PYTHONPATH=/app
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
