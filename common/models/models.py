@@ -1,11 +1,11 @@
-from sqlalchemy import Column, Integer, String, LargeBinary, DateTime, Boolean, ForeignKey, UniqueConstraint, Text
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+# common/models/models.py (excerpt)
+from sqlalchemy import Column, Integer, String, LargeBinary, DateTime, Boolean, ForeignKey, UniqueConstraint, Text # type: ignore
+from sqlalchemy.orm import Mapped, mapped_column # type: ignore
 from datetime import datetime, timezone
 from common.db import Base
 
 UTCNOW = lambda: datetime.now(timezone.utc)
 
-# ---- Voting data ----
 class Ballot(Base):
     __tablename__ = "ballots"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -23,28 +23,25 @@ class BallotChain(Base):
     curr_hash: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=UTCNOW)
 
-# ---- Registration tokens (one-time ballot token, OTBT) ----
 class BallotToken(Base):
     __tablename__ = "ballot_tokens"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    token: Mapped[str] = mapped_column(String(64), unique=True, index=True)  # random hex
-    voter_ref: Mapped[str] = mapped_column(String(128))  # some opaque reference (no PII required)
+    token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    voter_ref: Mapped[str] = mapped_column(String(128))
     exp_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-# ---- Admin users & approvals (dual control) ----
 class AdminUser(Base):
     __tablename__ = "admin_users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     email: Mapped[str] = mapped_column(String(254), unique=True, index=True)
-    # WebAuthn details will be stored later (credential id, public key, etc.)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 class ResultAction(Base):
     __tablename__ = "result_actions"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    type: Mapped[str] = mapped_column(String(64))  # e.g., EXPORT
-    payload: Mapped[str] = mapped_column(Text)     # JSON string
+    type: Mapped[str] = mapped_column(String(64))
+    payload: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(32), default="PENDING")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=UTCNOW)
 
