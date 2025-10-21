@@ -4,15 +4,18 @@ from contextlib import asynccontextmanager
 import os
 
 from common.db import engine, Base
-from .routes import router
 
+# 🔴 ADD THIS LINE to ensure all models (Voter, UserAuth, etc.) are imported
+import common.models.models  # noqa: F401
+
+from .routes import router
+from .routes_auth import router as auth_router  # make sure this import stays
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if os.getenv("RUN_DB_MIGRATIONS", "false").lower() == "true":
         Base.metadata.create_all(bind=engine)
     yield
-
 
 app = FastAPI(
     title="Registration Service",
@@ -22,16 +25,13 @@ app = FastAPI(
     redoc_url=None,
 )
 
-# keep your existing imports and app setup
-
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
 
-# add this alias so nginx path works too
 @app.get("/registration/healthz")
 def healthz_alias():
     return {"status": "ok"}
 
-
 app.include_router(router, prefix="/registration")
+app.include_router(auth_router, prefix="/registration")

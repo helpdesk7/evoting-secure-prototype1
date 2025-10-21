@@ -1,15 +1,22 @@
-fastapi==0.111.0
-uvicorn[standard]==0.30.0
-pydantic==2.8.2
-SQLAlchemy>=2.0.0
+# === Core API ===
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# === Database + ORM ===
+SQLAlchemy==2.0.36
 psycopg2-binary==2.9.9
+
+# === Config & Validation ===
 python-dotenv==1.0.1
-pycryptodome
-# Pin cryptography to a wheel-friendly version if your network blocks newer wheels
-cryptography>=43.0.0
+pydantic==2.9.2
+email-validator==2.2.0   # upgraded for full Pydantic v2 support
 
-fido2==1.1.2
-pyotp==2.9.0
+# === Cryptography ===
+pycryptodome==3.20.0      # AES (Crypto.Cipher)
+bcrypt==4.1.2             # fixes bcrypt __about__ issue and 72-byte password bug
+passlib[bcrypt]==1.7.4    # password hashing (bcrypt backend)
+pyotp==2.9.0              # TOTP codes for MFA
+PyJWT==2.9.0              # JWT tokens
 
-pytest==8.3.3
-httpx==0.27.2
+# === QR Code (for MFA provisioning) ===
+qrcode[pil]==7.4.2
