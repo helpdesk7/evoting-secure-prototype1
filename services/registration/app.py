@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI  # type: ignore
 from contextlib import asynccontextmanager
 from common.db import engine, Base
 from common.models.models import *  # noqa
 from .routes import router
+from .routes_ballot import router as ballot_router  # 🟢 NEW: SR-09 ballots
 import os
 
 
@@ -31,13 +32,18 @@ app = FastAPI(
 
 @app.get("/healthz")
 def healthz():
+    """Simple health check endpoint"""
     return {"status": "ok"}
 
 
 @app.get("/readyz")
 def readyz():
+    """Readiness probe endpoint (checks DB connection)"""
     return {"db": "ok"}
 
 
 # Include your functional routes
 app.include_router(router, prefix="/registration")
+
+# 🟢 Include SR-09 ballot encryption routes
+app.include_router(ballot_router, prefix="/registration")
