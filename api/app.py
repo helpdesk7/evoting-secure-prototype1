@@ -1,3 +1,5 @@
+# api/app.py
+
 from fastapi import FastAPI
 from .routers import auth, ballots, results, secure  # ✅ added secure
 

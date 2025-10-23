@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from common.models.roles import Role
 from api.security.rbac import require_role
 
-router = APIRouter(prefix="/secure", tags=["secure"])
+router = APIRouter(tags=["secure"])
 
 
 
