@@ -6,10 +6,19 @@ All logs avoid storing any personally identifiable information (PII).
 
 import hashlib
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 
-LOG_FILE = Path(__file__).resolve().parent.parent / "anon_sessions.log"
+
+def get_log_path() -> Path:
+    """Return the active log path (override via ANON_LOG_PATH)."""
+    return Path(
+        os.getenv(
+            "ANON_LOG_PATH",
+            Path(__file__).resolve().parent.parent / "anon_sessions.log",
+        )
+    )
 
 
 def anonymize_value(value: str) -> str:
@@ -35,11 +44,17 @@ def log_session(
         "ip_hash": anonymize_value(ip),
         "extra": extra or {},
     }
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
+
+    log_path = get_log_path()
+    log_path.parent.mkdir(parents=True, exist_ok=True)  # ensure directory exists
+
+    with open(log_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
+
+    print(f"[SR-08] Logged entry to: {log_path}")  # ✅ for debugging/tests
 
 
 if __name__ == "__main__":
     # simple manual test
     log_session("test", "user@example.com", "127.0.0.1", {"note": "manual test"})
-    print(f"✅ Logged test entry to {LOG_FILE}")
+    print(f"✅ Logged test entry to {get_log_path()}")

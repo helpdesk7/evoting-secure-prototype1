@@ -14,10 +14,10 @@ class AnonSessionMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         try:
             ip = request.client.host if request.client else "unknown"
-            user_identifier = request.headers.get(
-                "x-user-id", "guest"
-            )  # optional header
+            user_identifier = request.headers.get("x-user-id", "guest")
             event = f"{request.method} {request.url.path}"
+
+            # ✅ call the central logger (handles path + anonymization)
             log_session(event=event, user_identifier=user_identifier, ip=ip)
         except Exception as e:
             print(f"[AnonSessionMiddleware] Logging failed: {e}")
