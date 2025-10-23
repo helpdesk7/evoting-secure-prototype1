@@ -1,35 +1,49 @@
-from fastapi import APIRouter, HTTPException, Depends, Body # type: ignore
-from datetime import datetime, timedelta, timezone
-import secrets
+# services/registration/routes.py
+from fastapi import APIRouter, Depends, HTTPException # type: ignore
+from pydantic import BaseModel # type: ignore
 from sqlalchemy.orm import Session # type: ignore
+from datetime import date
 from common.db import get_session
-from common.models.models import BallotToken
+from common.models.models import Voter
+from cryptoutils.encryption import encrypt_voter_data  # takes ONE dict
 
 router = APIRouter()
 
-@router.get("/healthz")
-def healthz():
-    """
-    Service-scoped health endpoint for Registration microservice.
-    """
-    return {"status": "ok"}
+class VoterIn(BaseModel):
+    name: str
+    address: str
+    dob: date
+    eligibility: bool
+    region: str | None = None
 
-@router.post("/eligibility/check")
-def eligibility_check(voter_ref: str = Body(..., embed=True)):
-    if not voter_ref.strip():
-        raise HTTPException(400, "invalid voter ref")
-    return {"eligible": True, "voter_ref": voter_ref}
+@router.post("/registration/voter", response_model=str, status_code=201)
+def register_voter(payload: VoterIn, db: Session = Depends(get_session)) -> str:
+    try:
+        # Build the dict expected by encrypt_voter_data
+        data = {
+            "name": payload.name,
+            "address": payload.address,
+            "dob": payload.dob.isoformat(),
+            "eligibility": payload.eligibility,
+            "region": payload.region or "",
+        }
 
-@router.post("/ballot/token")
-def issue_token(
-    voter_ref: str = Body(..., embed=True),
-    minutes_valid: int = Body(10, embed=True),
-    db: Session = Depends(get_session),
-):
-    if not voter_ref.strip():
-        raise HTTPException(400, "invalid voter ref")
-    token = secrets.token_hex(32)  # 64-hex
-    exp = datetime.now(timezone.utc) + timedelta(minutes=minutes_valid)
-    db.add(BallotToken(token=token, voter_ref=voter_ref, exp_at=exp))
-    db.commit()
-    return {"otbt": token, "exp": exp.isoformat()}
+        enc = encrypt_voter_data(data)  # <-- ONE dict argument
+
+        # Save encrypted fields
+        voter = Voter(
+            name_enc=enc["name_enc"],
+            address_enc=enc["address_enc"],
+            dob_enc=enc["dob_enc"],
+            eligibility_enc=enc["eligibility_enc"],
+            region=data["region"],
+        )
+        db.add(voter)
+        db.commit()
+        db.refresh(voter)
+        return str(voter.id)
+
+    except Exception as e:
+        db.rollback()
+        print("register_voter error:", repr(e))
+        raise HTTPException(status_code=500, detail="internal error")
