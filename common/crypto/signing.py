@@ -1,49 +1,59 @@
 # common/crypto/signing.py
 from __future__ import annotations
-import os, pathlib
+import base64
+import os
 from typing import Tuple
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey, Ed25519PublicKey
+)
 from cryptography.hazmat.primitives import serialization
 
-DEFAULT_KEY_DIR = os.getenv("RESULTS_SIGNING_KEY_DIR", "/app/keys")
-DEFAULT_PRIV_PATH = os.getenv("RESULTS_SIGNING_PRIV", f"{DEFAULT_KEY_DIR}/ed25519_private.pem")
+# single in-process key (for demo; swap with HSM/KMS in prod)
+_PRIV: Ed25519PrivateKey | None = None
 
-def _ensure_keypair(priv_path: str = DEFAULT_PRIV_PATH) -> Tuple[Ed25519PrivateKey, Ed25519PublicKey]:
-    path = pathlib.Path(priv_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
+def _load_or_create_key() -> Ed25519PrivateKey:
+    global _PRIV
+    if _PRIV is not None:
+        return _PRIV
 
-    if path.exists():
-        data = path.read_bytes()
-        priv = serialization.load_pem_private_key(data, password=None)
-        if not isinstance(priv, Ed25519PrivateKey):
-            raise ValueError("Loaded private key is not Ed25519")
-    else:
-        priv = Ed25519PrivateKey.generate()
-        pem = priv.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption(),
-        )
-        path.write_bytes(pem)
+    # Option A: load from base64-encoded private key (raw seed/private bytes)
+    priv_b64 = os.getenv("RESULTS_SIGNING_PRIVKEY_B64")
+    if priv_b64:
+        raw = base64.b64decode(priv_b64)
+        try:
+            _PRIV = Ed25519PrivateKey.from_private_bytes(raw)
+            return _PRIV
+        except Exception:
+            # fall through to create
+            pass
 
+    # Option B: create new (ephemeral) key
+    _PRIV = Ed25519PrivateKey.generate()
+    return _PRIV
+
+def get_keypair() -> Tuple[Ed25519PrivateKey, Ed25519PublicKey]:
+    priv = _load_or_create_key()
     pub = priv.public_key()
     return priv, pub
 
-def get_public_key_pem() -> bytes:
-    _, pub = _ensure_keypair()
-    return pub.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+def get_public_key_b64() -> str:
+    _, pub = get_keypair()
+    pub_bytes = pub.public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw,
     )
+    return base64.b64encode(pub_bytes).decode("ascii")
 
-def sign_bytes(data: bytes) -> bytes:
-    priv, _ = _ensure_keypair()
-    return priv.sign(data)
+def sign_detached_b64(message: bytes) -> str:
+    priv, _ = get_keypair()
+    sig = priv.sign(message)
+    return base64.b64encode(sig).decode("ascii")
 
-def verify_bytes(data: bytes, signature: bytes) -> bool:
-    _, pub = _ensure_keypair()
+def verify_detached_b64(message: bytes, signature_b64: str, public_key_b64: str) -> bool:
     try:
-        pub.verify(signature, data)
+        sig = base64.b64decode(signature_b64)
+        pub = base64.b64decode(public_key_b64)
+        Ed25519PublicKey.from_public_bytes(pub).verify(sig, message)
         return True
     except Exception:
         return False
