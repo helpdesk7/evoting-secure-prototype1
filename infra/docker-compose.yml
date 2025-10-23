@@ -1,65 +1,16 @@
-version: "3.9"
-
 services:
-  db:
-    image: postgres:16
-    environment:
-      POSTGRES_PASSWORD: postgres
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL","pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  registration:
-    build: ..
-    command: uvicorn services.registration.app:app --host 0.0.0.0 --port 8001
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
-      - RUN_DB_MIGRATIONS=true   # << only here
-    depends_on:
-      - db
-
-
-  voting_a:
-    build: ..
-    command: uvicorn services.voting.app:app --host 0.0.0.0 --port 8002
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
-      - BALLOT_AES_KEY=d8943206445668cf634bf933b9486e1cafd5b425ab5754b30c1f5acdef40614c
-    depends_on:
-      - db
-
-  voting_b:
-    build: ..
-    command: uvicorn services.voting.app:app --host 0.0.0.0 --port 8003
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
-      - BALLOT_AES_KEY=d8943206445668cf634bf933b9486e1cafd5b425ab5754b30c1f5acdef40614c
-    depends_on:
-      - db
-
-  results:
-    build: ..
-    command: uvicorn services.results.app:app --host 0.0.0.0 --port 8004
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
-    depends_on:
-      - db
-
   nginx:
-    image: nginx:alpine
+    image: nginx:1.27-alpine
     ports:
-      - "8080:80"
+      - "8443:443"          # HTTPS
+      - "8081:80"         
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - voting_a
-      - voting_b
-      - registration
-      - results
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl/fullchain.pem:/etc/ssl/fullchain.pem:ro
+      - ./ssl/privkey.pem:/etc/ssl/privkey.pem:ro
 
-volumes:
-  pgdata:
+
+
+
