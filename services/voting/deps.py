@@ -1,6 +1,6 @@
 from __future__ import annotations
-from fastapi import Depends, HTTPException, Header, Query
-from sqlalchemy.orm import Session
+from fastapi import Depends, HTTPException, Header, Query # type: ignore
+from sqlalchemy.orm import Session # type: ignore
 from datetime import datetime, timezone
 from common.db import get_session
 from common.models.models import BallotToken

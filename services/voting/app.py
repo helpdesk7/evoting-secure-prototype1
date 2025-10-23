@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI # type: ignore
 from contextlib import asynccontextmanager
 from common.db import engine, Base
 from common.models.models import *  # noqa: F401,F403

@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, Depends # type: ignore
+from sqlalchemy.orm import Session # type: ignore
 from common.db import get_session
 from common.models.models import AdminUser, ResultAction, Approval
 import json

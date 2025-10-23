@@ -3,31 +3,30 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.pytest_cache/
-.venv/
-venv/
-.env
-.env.*
-.envrc
+*.sqlite3
 
-# Editors/OS
+# Environment & secrets
+.env
+*.env
+infra/.env
+.env.example  # keep this if you need a template for others
+*.key
+*.pem
+
+# Docker artifacts
+*.pid
+*.log
+infra/pgdata/
+infra/data/
+infra/tmp/
+infra/__pycache__/
+infra/.DS_Store
+
+# IDEs / Editors
 .vscode/
 .idea/
+*.swp
+
+# OS-specific
 .DS_Store
-
-# Coverage/lint caches
-**/.coverage
-**/htmlcov/
-**/.mypy_cache/
-**/.ruff_cache/
-
-# Build / dist
-build/
-dist/
-
-# Docker & misc
-*.log
-
-# Keys/secrets (keep a README only)
-common/crypto/keys/*
-!common/crypto/keys/README.md
+Thumbs.db

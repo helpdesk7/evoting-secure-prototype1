@@ -1,4 +1,4 @@
-# common/crypto/ballots.py
+# common/cryptoutils/ballots.py
 from __future__ import annotations
 
 import os

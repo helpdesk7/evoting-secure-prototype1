@@ -2,7 +2,9 @@ services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: evote
+      POSTGRES_USER: evote
+      POSTGRES_PASSWORD: StrongLocalPassword123
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -75,14 +77,7 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "8080:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - voting_a
-      - voting_b
-      - registration
-      - results
+      - "8001:8001"
 
 volumes:
   pgdata:
