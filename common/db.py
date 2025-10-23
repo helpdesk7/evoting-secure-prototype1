@@ -1,4 +1,6 @@
 # common/db.py
+from sqlalchemy import create_engine # type: ignore
+from sqlalchemy.orm import sessionmaker, DeclarativeBase # type: ignore
 import os
 from sqlalchemy import create_engine # type: ignore
 from sqlalchemy.orm import sessionmaker # type: ignore
@@ -20,3 +22,5 @@ def get_session():
         yield db
     finally:
         db.close()
+# Alias for FastAPI dependencies
+get_db = get_session
