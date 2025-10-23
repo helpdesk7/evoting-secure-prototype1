@@ -8,3 +8,6 @@ Secure Electronic Voting Prototype – INTE2667 Assignment 3 Group project imple
    ```bash
    cd infra
    cp .env.example .env
+
+# Added SR-17 signing feature details
+# Updated documentation for signing and verification endpoints
