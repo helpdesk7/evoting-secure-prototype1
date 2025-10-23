@@ -12,3 +12,4 @@
 ✅ SR-02: Address Audit API – Implemented and merged into main
 ✅ SR-11: Ballot Validation API – Implemented and merged into main
 ✅ SR-20: Results API – Implemented and merged into main
+   SR-06: -Fully implemented
