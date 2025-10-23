@@ -1,42 +1,46 @@
 """
 api/security/rbac.py
-Implements basic Role-Based Access Control for SR-05.
-Provides helper functions to extract user role from JWT
-and enforce access rules on API endpoints.
+Implements simple Role-Based Access Control (SR-05).
 """
 
 from fastapi import Depends, HTTPException, status
-from typing import List
-from api.security.jwt import decode_jwt_token     # existing utility
 from common.models.roles import Role
+from common.models.models import AdminUser
 
 
-def get_current_user_role(token: str) -> Role:
+# --------------------------------------------------------------------
+# Simulated current user (for prototype / testing)
+# --------------------------------------------------------------------
+
+def get_current_user() -> AdminUser:
     """
-    Decode JWT and return the role claim (default = guest).
+    Mock the current authenticated user.
+    In a full implementation, this would:
+    - Verify JWT or session
+    - Fetch user from DB
+    - Check is_active
     """
-    payload = decode_jwt_token(token)
-    role_value = payload.get("role", "guest")
-    try:
-        return Role(role_value)
-    except ValueError:
-        return Role.GUEST
+    return AdminUser(
+        email="mock@aec.gov.au",
+        is_active=True,
+        role=Role.AEC_STAFF.value
+    )
 
 
-def role_required(allowed_roles: List[Role]):
+# --------------------------------------------------------------------
+# Role enforcement dependency
+# --------------------------------------------------------------------
+
+def require_role(required: Role):
     """
-    Dependency factory enforcing that the current user has an allowed role.
-    Usage:
-        @router.get("/secure")
-        def secure_endpoint(role=Depends(role_required([Role.ADMIN]))):
-            ...
+    FastAPI dependency that enforces a minimum role privilege.
     """
-    def verify_role(token: str = Depends()):
-        role = get_current_user_role(token)
-        if role not in allowed_roles:
+    def dependency(user: AdminUser = Depends(get_current_user)):
+        if not user.has_role(required):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access denied for role '{role}'."
+                detail=f"Access denied: {user.role} lacks {required.value} privileges",
             )
-        return role
-    return verify_role
+        return user
+
+    return dependency

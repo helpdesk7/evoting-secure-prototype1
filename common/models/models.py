@@ -17,6 +17,8 @@ from sqlalchemy import ( # type: ignore
 from sqlalchemy.orm import Mapped, mapped_column # type: ignore
 
 from common.db import Base
+from common.models.roles import Role
+
 
 # ---------------------------------------------------------------------
 # Utility
@@ -79,12 +81,29 @@ class BallotToken(Base):
 class AdminUser(Base):
     """
     Registered admin users with access to results and actions.
+    Now includes role-based access control (SR-05).
     """
     __tablename__ = "admin_users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     email: Mapped[str] = mapped_column(String(254), unique=True, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # ✅ New field for RBAC
+    role: Mapped[Role] = mapped_column(String(32), default=Role.AEC_STAFF.value)
+
+    def has_role(self, required: Role) -> bool:
+        """Check if user meets or exceeds the required role privilege."""
+        hierarchy = [
+            Role.GUEST,
+            Role.VOTER,
+            Role.OBSERVER,
+            Role.AEC_STAFF,
+            Role.COMMISSIONER_DELEGATE,
+            Role.ADMIN,
+        ]
+        return hierarchy.index(self.role) >= hierarchy.index(required)
+
 
 
 class ResultAction(Base):
