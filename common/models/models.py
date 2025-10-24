@@ -95,8 +95,6 @@ class AdminUser(Base):
     def has_role(self, required: Role) -> bool:
         """Check if user meets or exceeds the required role privilege."""
         hierarchy = [
-            Role.GUEST,
-            Role.VOTER,
             Role.OBSERVER,
             Role.AEC_STAFF,
             Role.COMMISSIONER_DELEGATE,
