@@ -41,5 +41,5 @@ def require_role(allowed_roles: List[Role]):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied for role '{role}'."
             )
-        return {"role": role}
+        return role
     return verify_role

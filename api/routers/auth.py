@@ -26,7 +26,7 @@ def login(body: LoginReq):
     if not body.username or not body.password:
         raise HTTPException(
             status_code=400,
-            detail={"code": "bad_credentials", "detail": "Missing credentials"}
+            detail={"code": "bad_credentials", "detail": "Missing credentials"},
         )
 
     # ✅ Validate role
@@ -38,7 +38,7 @@ def login(body: LoginReq):
         "access_token": token,
         "token_type": "bearer",
         "role": body.role,
-        "ttl_min": 15
+        "ttl_min": 15,
     }
 
 

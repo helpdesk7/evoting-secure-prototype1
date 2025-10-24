@@ -12,18 +12,18 @@ router = APIRouter(tags=["secure"])
 
 
 @router.get("/admin")
-def admin_area(user=Depends(require_role(Role.ADMIN))):
+def admin_area(role=Depends(require_role(Role.ADMIN))):
     """Accessible by admins only."""
-    return {"message": f"Admin control panel access granted to: {user.role}"}
+    return {"message": f"Admin control panel access granted to: {role}"}
 
 
 @router.get("/staff")
-def staff_area(user=Depends(require_role(Role.AEC_STAFF))):
+def staff_area(role=Depends(require_role(Role.AEC_STAFF))):
     """Accessible by AEC staff and higher."""
-    return {"message": f"Welcome AEC Staff — access granted for role: {user.role}"}
+    return {"message": f"Welcome AEC Staff — access granted for role: {role}"}
 
 
 @router.get("/observer")
-def observer_area(user=Depends(require_role(Role.OBSERVER))):
+def observer_area(role=Depends(require_role(Role.OBSERVER))):
     """Accessible by observers and above."""
-    return {"message": f"Observer dashboard open to: {user.role}"}
+    return {"message": f"Observer dashboard open to: {role}"}
