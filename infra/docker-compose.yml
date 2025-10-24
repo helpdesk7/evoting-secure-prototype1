@@ -75,7 +75,7 @@ services:
       - "8004:8004"
 
   nginx:
-    image: nginx:alpine
+    image: nginx:1.27-alpine
     ports:
       - "8001:8001"
 
