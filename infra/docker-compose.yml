@@ -4,7 +4,9 @@ services:
     environment:
       POSTGRES_DB: evote
       POSTGRES_USER: evote
-      POSTGRES_PASSWORD: evote_pw
+      POSTGRES_PASSWORD: StrongLocalPassword123
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U evote -d evote']
       interval: 10s
@@ -16,12 +18,66 @@ services:
       context: ..
       dockerfile: Dockerfile
     command: uvicorn services.registration.app:app --host 0.0.0.0 --port 8001
+    env_file:
+      - .env  # AES_MASTER_KEY, MFA_ENC_KEY_HEX, JWT_SECRET, etc.
     environment:
-      DATABASE_URL: postgresql+psycopg2://evote:evote_pw@db:5432/evote
       RUN_DB_MIGRATIONS: "true"
-      AES_MASTER_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/postgres
+      # REQUIRED for SR-09 encryption in registration service:
+      BALLOT_AES_KEY: d8943206445668cf634bf933b9486e1cafd5b425ab5754b30c1f5acdef40614c
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "8001:8001"
+
+  voting_a:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: uvicorn services.voting.app:app --host 0.0.0.0 --port 8002
+    env_file:
+      - .env  # BALLOT_AES_KEY may also live here
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/postgres
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8002:8002"
+
+  voting_b:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: uvicorn services.voting.app:app --host 0.0.0.0 --port 8003
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/postgres
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8003:8003"
+
+  results:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: uvicorn services.results.app:app --host 0.0.0.0 --port 8004
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/postgres
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8004:8004"
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8001:8001"
+
+volumes:
+  pgdata:
