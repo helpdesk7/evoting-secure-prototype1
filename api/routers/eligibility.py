@@ -1,20 +1,40 @@
 """
 api/routers/eligibility.py
-Implements the Eligibility Verification API (SR-04, Commit 10).
-Currently provides a mock eligibility check.
+Implements real eligibility verification logic (SR-04, Commit 12).
 """
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+from common.db import get_db
+from common.models.voter import Voter
 
-router = APIRouter()
+router = APIRouter(prefix="/api/eligibility", tags=["eligibility"])
+
 
 @router.get("/check")
-def check_eligibility(email: str = Query(..., description="Voter's email address")):
+def check_eligibility(
+    email: str = Query(..., description="Voter's email address"),
+    db: Session = Depends(get_db),
+):
     """
-    Mock eligibility verification endpoint.
-    Later commits will integrate real voter database logic.
+    Checks voter eligibility by querying the voter registry.
+    Returns eligibility status and division.
     """
-    if email.endswith("@example.com"):
-        return {"email": email, "eligible": True, "reason": "Registered demo user"}
-    else:
-        return {"email": email, "eligible": False, "reason": "Not found in registry"}
+    voter = db.query(Voter).filter(Voter.email == email).first()
+
+    if not voter:
+        raise HTTPException(status_code=404, detail="Voter not found in registry")
+
+    if not voter.is_active:
+        return {
+            "email": email,
+            "eligible": False,
+            "reason": "Inactive or suspended registration",
+        }
+
+    return {
+        "email": email,
+        "eligible": True,
+        "division": voter.division,
+        "reason": "Voter found and active",
+    }
