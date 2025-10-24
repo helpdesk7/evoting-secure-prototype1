@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from common.db import get_db
 from common.models.voter import Voter
 
-router = APIRouter(prefix="/api/eligibility", tags=["eligibility"])
+router = APIRouter(tags=["eligibility"])
 
 
 @router.get("/check")
