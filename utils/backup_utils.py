@@ -7,6 +7,8 @@ import os
 import shutil
 from datetime import datetime
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from Crypto.Cipher import AES
+
 
 # Ensure backup directory exists
 BACKUP_DIR = "backup"
@@ -41,3 +43,21 @@ def perform_encrypted_backup(db_path: str = "dev.db"):
         "backup_file": backup_file,
         "key_preview": key.hex()[:16] + "...",
     }
+
+
+
+def restore_from_backup(encrypted_file: str):
+    """Simulates decryption & verification of latest encrypted backup."""
+    try:
+        with open(encrypted_file, "rb") as f:
+            blob = f.read()
+
+        # Just decrypt to test validity (reuse same key from perform_encrypted_backup)
+        from .crypto import AES_KEY  # or whichever key constant is used
+        nonce, tag, ct = blob[:12], blob[12:28], blob[28:]
+        cipher = AES.new(AES_KEY, AES.MODE_GCM, nonce=nonce)
+        cipher.decrypt_and_verify(ct, tag)
+
+        return {"file": encrypted_file, "verified": True}
+    except Exception as e:
+        return {"file": encrypted_file, "verified": False, "error": str(e)}

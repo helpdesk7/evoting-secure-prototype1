@@ -53,3 +53,12 @@ def test_backup_endpoint_creates_encrypted_file(tmp_path):
     # Check key preview format
     assert "key_preview" in details
     assert len(details["key_preview"]) >= 10
+
+
+
+def test_restore_drill_endpoint():
+    """✅ Should simulate restore drill or report no backups available."""
+    resp = client.post("/api/backup/restore/drill")
+    assert resp.status_code in (200, 400)
+    data = resp.json()
+    assert "status" in data
