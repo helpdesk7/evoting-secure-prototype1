@@ -20,3 +20,5 @@ def me(credentials: HTTPAuthorizationCredentials = Depends(security)):
         return {"sub": data["sub"]}
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
+
+
