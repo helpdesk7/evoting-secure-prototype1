@@ -1,24 +1,27 @@
+# common/models/models.py
+from __future__ import annotations
+from datetime import datetime, timezone
 from cryptoutils.encryption import encrypt_voter_data
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column # type: ignore
-from sqlalchemy import LargeBinary, Integer, String, TIMESTAMP, func # type: ignore
+from sqlalchemy import ( # type: ignore
+    Column, Integer, String, LargeBinary, DateTime, Boolean,
+    ForeignKey, UniqueConstraint, Text, func
+)
+from sqlalchemy.orm import Mapped, mapped_column # type: ignore
+from common.db import Base  # <-- must import Base from common.db
 
-class Base(DeclarativeBase):
-    pass
+UTCNOW = lambda: datetime.now(timezone.utc)
 
 class Voter(Base):
     __tablename__ = "voters"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name_enc: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     address_enc: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     dob_enc: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
-    # ➜ ADD THIS (it’s missing)
-    eligibility_enc: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    eligibility: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    region: Mapped[str] = mapped_column(String(64), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=UTCNOW)
 
-    region: Mapped[str] = mapped_column(String, nullable=False)
-
-    created_at: Mapped[str] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
-    updated_at: Mapped[str] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+# (include the rest of your models: Ballot, BallotChain, etc.)
 
 
     # convenience accessors (de/encrypt transparently)
