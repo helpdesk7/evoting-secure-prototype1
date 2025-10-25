@@ -6,35 +6,38 @@ from .routes import router
 from .routes_ballot import router as ballot_router  # 🟢 NEW: SR-09 ballots
 import os
 
+from common.db import engine, Base
+
+# 🔴 ADD THIS LINE to ensure all models (Voter, UserAuth, etc.) are imported
+import common.models.models  # noqa: F401
+
+from .routes import router
+from .routes_auth import router as auth_router  # make sure this import stays
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Modern lifespan event handler — replaces @app.on_event("startup").
-    Only registration service runs DB migrations (others skip).
-    """
+    import os
     if os.getenv("RUN_DB_MIGRATIONS", "false").lower() == "true":
         Base.metadata.create_all(bind=engine)
-        print("✅ Database tables created by registration service.")
-    yield  # startup continues here
-    # (optional cleanup code could go after yield)
+        print("✅ Database tables created.")
+    yield
 
-
-# Create the FastAPI app with lifespan handler
 app = FastAPI(
-    title="Registration Service",
     lifespan=lifespan,
     docs_url="/registration/docs",
     openapi_url="/registration/openapi.json",
-    redoc_url=None,
+    title="Registration Service",
+    version="0.1.0"
 )
-
 
 @app.get("/healthz")
 def healthz():
     """Simple health check endpoint"""
     return {"status": "ok"}
 
+@app.get("/registration/healthz")
+def healthz_alias():
+    return {"status": "ok"}
 
 @app.get("/readyz")
 def readyz():

@@ -1,35 +1,42 @@
-from fastapi import APIRouter, HTTPException, Depends, Body # type: ignore
-from datetime import datetime, timedelta, timezone
-import secrets
+# services/registration/routes.py  (or your voter route file)
+
+from fastapi import APIRouter, Depends, HTTPException # type: ignore
 from sqlalchemy.orm import Session # type: ignore
+from pydantic import BaseModel # type: ignore
 from common.db import get_session
-from common.models.models import BallotToken
+from common.models.models import Voter
+from common.crypto.ballot_crypto import aes_gcm_encrypt  # add this
+from common.crypto.kms import LocalKMS # type: ignore
+# or import the exact functions you use for voter encryption  # type: ignore # whatever your func is called
 
-router = APIRouter()
+router = APIRouter(tags=["registration"])
 
-@router.get("/healthz")
-def healthz():
-    """
-    Service-scoped health endpoint for Registration microservice.
-    """
-    return {"status": "ok"}
+class VoterIn(BaseModel):
+    name: str
+    address: str
+    dob: str         # ISO date
+    eligibility: bool
+    region: str
 
-@router.post("/eligibility/check")
-def eligibility_check(voter_ref: str = Body(..., embed=True)):
-    if not voter_ref.strip():
-        raise HTTPException(400, "invalid voter ref")
-    return {"eligible": True, "voter_ref": voter_ref}
+@router.post("/registration/voter", status_code=201)
+def register_voter(payload: VoterIn, db: Session = Depends(get_session)):
+    # eligibility is used for logic/validation only; not stored in this table
+    if not payload.eligibility:
+        raise HTTPException(status_code=422, detail="Voter not eligible")
 
-@router.post("/ballot/token")
-def issue_token(
-    voter_ref: str = Body(..., embed=True),
-    minutes_valid: int = Body(10, embed=True),
-    db: Session = Depends(get_session),
-):
-    if not voter_ref.strip():
-        raise HTTPException(400, "invalid voter ref")
-    token = secrets.token_hex(32)  # 64-hex
-    exp = datetime.now(timezone.utc) + timedelta(minutes=minutes_valid)
-    db.add(BallotToken(token=token, voter_ref=voter_ref, exp_at=exp))
+    kms = LocalKMS()
+    name_ct, name_nonce = aes_gcm_encrypt(payload.name.encode("utf-8"), kms)
+    addr_ct, addr_nonce = aes_gcm_encrypt(payload.address.encode("utf-8"), kms)
+    dob_ct, dob_nonce   = aes_gcm_encrypt(payload.dob.encode("utf-8"), kms)  # if dob is a date, str() it first
+
+    v = Voter(
+        name_enc=name_ct,
+        address_enc=addr_ct,
+        dob_enc=dob_ct,
+        region=payload.region,
+        # created_at will default server-side if your model sets it; otherwise set it here
+    )
+    db.add(v)
     db.commit()
-    return {"otbt": token, "exp": exp.isoformat()}
+    db.refresh(v)
+    return {"id": v.id}

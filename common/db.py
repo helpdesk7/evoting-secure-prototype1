@@ -2,14 +2,20 @@
 from sqlalchemy import create_engine # type: ignore
 from sqlalchemy.orm import sessionmaker, DeclarativeBase # type: ignore
 import os
+from sqlalchemy import create_engine # type: ignore
+from sqlalchemy.orm import sessionmaker, DeclarativeBase # type: ignore
+from dotenv import load_dotenv # type: ignore
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5432/postgres")
+load_dotenv()
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 class Base(DeclarativeBase):
     pass
+
+
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_session():
     db = SessionLocal()
