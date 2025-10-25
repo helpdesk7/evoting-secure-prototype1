@@ -16,16 +16,18 @@ from .routes_auth import router as auth_router  # make sure this import stays
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import os
     if os.getenv("RUN_DB_MIGRATIONS", "false").lower() == "true":
         Base.metadata.create_all(bind=engine)
+        print("✅ Database tables created.")
     yield
 
 app = FastAPI(
-    title="Registration Service",
     lifespan=lifespan,
     docs_url="/registration/docs",
     openapi_url="/registration/openapi.json",
-    redoc_url=None,
+    title="Registration Service",
+    version="0.1.0"
 )
 
 @app.get("/healthz")

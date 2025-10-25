@@ -1,49 +1,42 @@
-# services/registration/routes.py
+# services/registration/routes.py  (or your voter route file)
+
 from fastapi import APIRouter, Depends, HTTPException # type: ignore
-from pydantic import BaseModel # type: ignore
 from sqlalchemy.orm import Session # type: ignore
-from datetime import date
+from pydantic import BaseModel # type: ignore
 from common.db import get_session
 from common.models.models import Voter
-from cryptoutils.encryption import encrypt_voter_data  # takes ONE dict
+from common.crypto.ballot_crypto import aes_gcm_encrypt  # add this
+from common.crypto.kms import LocalKMS # type: ignore
+# or import the exact functions you use for voter encryption  # type: ignore # whatever your func is called
 
-router = APIRouter()
+router = APIRouter(tags=["registration"])
 
 class VoterIn(BaseModel):
     name: str
     address: str
-    dob: date
+    dob: str         # ISO date
     eligibility: bool
-    region: str | None = None
+    region: str
 
-@router.post("/registration/voter", response_model=str, status_code=201)
-def register_voter(payload: VoterIn, db: Session = Depends(get_session)) -> str:
-    try:
-        # Build the dict expected by encrypt_voter_data
-        data = {
-            "name": payload.name,
-            "address": payload.address,
-            "dob": payload.dob.isoformat(),
-            "eligibility": payload.eligibility,
-            "region": payload.region or "",
-        }
+@router.post("/registration/voter", status_code=201)
+def register_voter(payload: VoterIn, db: Session = Depends(get_session)):
+    # eligibility is used for logic/validation only; not stored in this table
+    if not payload.eligibility:
+        raise HTTPException(status_code=422, detail="Voter not eligible")
 
-        enc = encrypt_voter_data(data)  # <-- ONE dict argument
+    kms = LocalKMS()
+    name_ct, name_nonce = aes_gcm_encrypt(payload.name.encode("utf-8"), kms)
+    addr_ct, addr_nonce = aes_gcm_encrypt(payload.address.encode("utf-8"), kms)
+    dob_ct, dob_nonce   = aes_gcm_encrypt(payload.dob.encode("utf-8"), kms)  # if dob is a date, str() it first
 
-        # Save encrypted fields
-        voter = Voter(
-            name_enc=enc["name_enc"],
-            address_enc=enc["address_enc"],
-            dob_enc=enc["dob_enc"],
-            eligibility_enc=enc["eligibility_enc"],
-            region=data["region"],
-        )
-        db.add(voter)
-        db.commit()
-        db.refresh(voter)
-        return str(voter.id)
-
-    except Exception as e:
-        db.rollback()
-        print("register_voter error:", repr(e))
-        raise HTTPException(status_code=500, detail="internal error")
+    v = Voter(
+        name_enc=name_ct,
+        address_enc=addr_ct,
+        dob_enc=dob_ct,
+        region=payload.region,
+        # created_at will default server-side if your model sets it; otherwise set it here
+    )
+    db.add(v)
+    db.commit()
+    db.refresh(v)
+    return {"id": v.id}
