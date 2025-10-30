@@ -1,6 +1,7 @@
 # common/crypto/signing.py
 from __future__ import annotations
 import base64
+import hashlib
 import os
 from typing import Tuple
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -48,6 +49,9 @@ def sign_detached_b64(message: bytes) -> str:
     priv, _ = get_keypair()
     sig = priv.sign(message)
     return base64.b64encode(sig).decode("ascii")
+
+def get_pubkey_fingerprint() -> str:
+    return hashlib.sha256(get_public_key_b64()).hexdigest()
 
 def verify_detached_b64(message: bytes, signature_b64: str, public_key_b64: str) -> bool:
     try:
